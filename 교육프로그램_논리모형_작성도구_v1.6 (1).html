@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>교육프로그램 논리모형 작성 도구 v1.6</title>
+<style>
+  :root{
+    --green:#4f8f72;
+    --green-dark:#346c56;
+    --green-soft:#eaf4ee;
+    --green-head:#cfe3d4;
+    --line:#d9e1dc;
+    --ink:#1f2933;
+    --muted:#6b7280;
+    --panel:#ffffff;
+    --bg:#f6f8f7;
+    --shadow:0 4px 18px rgba(31,41,51,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{
+    margin:0;
+    font-family: "Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    color:var(--ink);
+    background:var(--bg);
+  }
+  button,input,textarea,select{font:inherit}
+  .topbar{
+    height:70px;
+    background:#fff;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 22px;
+    position:sticky;
+    top:0;
+    z-index:20;
+  }
+  .brand{display:flex;align-items:center;gap:12px;font-size:24px;font-weight:800}
+  .brand-badge{
+    width:34px;height:34px;border:3px solid var(--green);border-radius:8px;
+    display:flex;align-items:center;justify-content:center;color:var(--green);font-weight:900;
+  }
+  .actions{display:flex;align-items:center;gap:10px}
+  .save-state{color:var(--muted);font-size:14px;margin-right:8px}
+  .btn{
+    border:1px solid var(--line);background:#fff;padding:10px 15px;border-radius:9px;cursor:pointer;
+    font-weight:700;
+  }
+  .btn.primary{background:var(--green);color:#fff;border-color:var(--green)}
+  .btn:hover{filter:brightness(.98)}
+  .layout{
+    display:grid;
+    grid-template-columns:minmax(390px, 37%) minmax(620px, 63%);
+    gap:14px;
+    padding:14px;
+    height:calc(100vh - 70px);
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .left{
+    display:flex;
+    flex-direction:column;
+    height:100%;
+  }
+  .panel-head{
+    padding:18px 18px 10px;
+    border-bottom:1px solid #edf1ee;
+  }
+  .panel-head h2{margin:0 0 5px;font-size:20px}
+  .panel-head p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+  .accordion-wrap{
+    padding:10px 12px 18px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    flex:1;
+    min-height:0;
+  }
+  details.acc{
+    border:1px solid var(--line);
+    border-radius:8px;
+    margin-bottom:7px;
+    background:#fff;
+    overflow:hidden;
+  }
+  details.acc[open]{border-color:#bcd4c4;box-shadow:0 0 0 2px rgba(79,143,114,.06)}
+  summary{
+    cursor:pointer;
+    list-style:none;
+    padding:11px 13px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:700;
+    background:#fff;
+  }
+  summary::-webkit-details-marker{display:none}
+  details.acc[open] summary{background:var(--green-soft)}
+  .num{
+    min-width:26px;height:26px;border-radius:50%;
+    background:#d7ddda;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800
+  }
+  details.acc[open] .num{background:var(--green)}
+  .acc-body{padding:12px 13px 14px}
+  .guide{
+    background:#f3f7f4;border-left:4px solid var(--green);padding:10px 12px;border-radius:6px;
+    font-size:13px;line-height:1.55;margin-bottom:10px
+  }
+  .field{margin-bottom:11px}
+  .field:last-child{margin-bottom:0}
+  label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}
+  input[type=text],input[type=number],textarea,select{
+    width:100%;border:1px solid #ccd5cf;border-radius:7px;padding:10px 11px;background:#fff;
+    outline:none;
+  }
+  textarea{min-height:86px;resize:vertical;line-height:1.55}
+  input:focus,textarea:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(79,143,114,.10)}
+  .hint{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.45}
+  .inline{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .repeat-list{display:flex;flex-direction:column;gap:10px}
+  .repeat-card{border:1px solid #dfe7e2;border-radius:8px;padding:10px;background:#fbfcfb}
+  .repeat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .repeat-title{font-size:13px;font-weight:800;color:var(--green-dark)}
+  .mini-btn{
+    border:1px solid #cad7cf;background:#fff;border-radius:6px;padding:6px 9px;cursor:pointer;font-size:12px
+  }
+  .mini-btn.add{color:var(--green-dark);border-color:#bcd4c4;background:#f4faf6}
+  .mini-btn.remove{color:#9a4a4a}
+  .check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 8px}
+  .check-item{display:flex;gap:6px;align-items:center;font-size:13px}
+  .chatbox{
+    border-top:1px solid var(--line);
+    padding:10px 12px 12px;
+    background:#fbfcfb;
+  }
+  .chat-row{display:flex;gap:8px}
+  .chat-row textarea{min-height:72px}
+  .send{
+    width:48px;border:0;border-radius:8px;background:var(--green);color:white;cursor:pointer;font-size:20px
+  }
+  .chat-hint{font-size:11px;color:var(--muted);margin-top:6px}
+  .right{height:100%;display:flex;flex-direction:column}
+  .right-head{
+    padding:18px 18px 10px;
+    display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid #edf1ee
+  }
+  .right-head h2{margin:0 0 5px;font-size:20px}
+  .right-head p{margin:0;color:var(--muted);font-size:13px}
+  .tabs{display:flex;gap:6px}
+  .tab{
+    border:1px solid var(--line);background:#fff;border-radius:8px;padding:9px 16px;cursor:pointer;font-weight:700;color:#68736d
+  }
+  .tab.active{background:var(--green-soft);border-color:#a9c9b6;color:var(--green-dark)}
+  .view{display:none;padding:18px;overflow:auto;flex:1}
+  .view.active{display:block}
+  /* Logic model */
+  .logic-canvas{
+    min-width:880px;background:#fff;border:1px solid #e4e9e6;border-radius:10px;padding:18px;
+  }
+  .logic-top{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px}
+  .lm-box{border:2px solid #748c7c;border-radius:8px;overflow:hidden;background:white}
+  .lm-head{background:var(--green-head);padding:9px;text-align:center;font-size:18px;font-weight:800}
+  .lm-body{padding:12px;min-height:72px;white-space:pre-wrap;line-height:1.5;font-size:14px}
+  .logic-main{
+    display:grid;
+    grid-template-columns:1.08fr .78fr .9fr .72fr 1.45fr;
+    gap:16px;
+    align-items:stretch;
+    margin-bottom:18px;
+  }
+  .flow-card{position:relative;border:2px solid #748c7c;border-radius:8px;overflow:hidden;background:white;min-height:285px}
+  .flow-card:not(:last-child)::after{
+    content:"➜";position:absolute;right:-25px;top:47%;font-size:26px;color:#aeb9b3;z-index:4
+  }
+  .flow-head{background:var(--green-head);padding:9px;text-align:center;font-size:18px;font-weight:800}
+  .flow-body{padding:12px;white-space:pre-wrap;line-height:1.5;font-size:13px}
+  .outcome-grid{display:grid;grid-template-columns:repeat(3,1fr);height:calc(100% - 43px)}
+  .outcome-grid > div{border-right:1px solid #ccd7d0;display:flex;flex-direction:column}
+  .outcome-grid > div:last-child{border-right:none}
+  .outcome-title{background:#edf6ef;padding:8px;text-align:center;font-weight:800}
+  .outcome-text{padding:10px;white-space:pre-wrap;line-height:1.45;font-size:12px}
+  .external{margin-top:2px}
+  .logic-note{text-align:center;margin-top:12px;font-size:12px;color:#5f6963}
+  /* Detail */
+  .detail-sheet{min-width:820px;background:#fff}
+  .detail-title{font-size:24px;font-weight:900;margin:0 0 14px}
+  .detail-table{width:100%;border-collapse:collapse;font-size:13px}
+  .detail-table th,.detail-table td{border:1px solid #cdd7d1;padding:9px;vertical-align:top;white-space:pre-wrap;line-height:1.45}
+  .detail-table th{width:170px;background:#eff6f1;text-align:left}
+  .session-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
+  .session-table th,.session-table td{border:1px solid #cdd7d1;padding:8px;vertical-align:top;white-space:pre-wrap}
+  .session-table th{background:#dfeee3}
+  .empty{color:#a3aaa6}
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#243a30;color:#fff;
+    padding:10px 16px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:50
+  }
+  .toast.show{opacity:1}
+  
+  .step-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:10px;border-top:1px solid #edf1ee}
+  .next-btn{border:0;background:var(--green);color:#fff;border-radius:7px;padding:9px 15px;font-weight:800;cursor:pointer}
+  .next-btn:hover{filter:brightness(.97)}
+  .add-row{display:flex;justify-content:flex-end;margin-top:10px}
+  .pdf-busy{opacity:.65;pointer-events:none}
+
+  .user-chip{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 10px;border-radius:999px;
+    background:#eef5f1;color:var(--green-dark);
+    font-size:12px;font-weight:800;
+    border:1px solid #cfe0d6;
+  }
+  .user-change{
+    border:0;background:transparent;color:#617067;
+    text-decoration:underline;cursor:pointer;font-size:12px
+  }
+  .login-overlay{
+    position:fixed;inset:0;background:rgba(22,34,28,.42);
+    z-index:100;
+    display:flex;align-items:center;justify-content:center;
+    backdrop-filter:blur(2px)
+  }
+  .login-card{
+    width:min(420px,calc(100vw - 36px));
+    background:#fff;border-radius:16px;
+    box-shadow:0 18px 60px rgba(0,0,0,.18);
+    padding:26px;
+    border:1px solid #dce5df;
+  }
+  .login-card h2{margin:0 0 8px;font-size:24px}
+  .login-card p{margin:0 0 18px;color:var(--muted);font-size:13px;line-height:1.55}
+  .login-card input{
+    width:100%;padding:12px;border:1px solid #cbd6cf;border-radius:9px;font-size:15px
+  }
+  .login-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+  .login-error{min-height:20px;margin-top:8px;color:#b54c4c;font-size:12px}
+  .new-task-tab{
+    border:1px solid #e2c7c7;background:#fff7f7;color:#934d4d;
+    border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:800
+  }
+
+
+  .pdf-single-stage{
+    position:fixed;
+    left:-1200px;
+    top:0;
+    width:794px;
+    background:#fff;
+    z-index:-1;
+  }
+  .pdf-page{
+    width:794px;
+    height:1123px;
+    padding:38px 40px;
+    background:#fff;
+    box-sizing:border-box;
+    overflow:hidden;
+    font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    color:#1f2933;
+  }
+  .pdf-page h1{font-size:24px;margin:0 0 18px;font-weight:900;line-height:1.3}
+  .pdf-page h2{font-size:18px;margin:16px 0 8px;font-weight:900;line-height:1.3}
+  .pdf-page table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.5;table-layout:fixed}
+  .pdf-page th,.pdf-page td{
+    border:1px solid #cdd7d1;
+    padding:9px 10px;
+    vertical-align:top;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+    word-break:keep-all;
+  }
+  .pdf-page th{background:#eff6f1;text-align:left;width:150px}
+  .pdf-page .session th{background:#dfeee3;width:auto}
+  .pdf-page .session th:nth-child(1){width:62px}
+  .pdf-page .session th:nth-child(2){width:155px}
+  .pdf-page .session th:nth-child(4){width:140px}
+
+
+  .mode-badge{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:5px 8px;border-radius:999px;font-size:12px;font-weight:800;
+    background:#eef3f0;color:#607067;margin-right:2px
+  }
+  .mode-badge.sample{background:#fff4da;color:#8a6418}
+
+
+  @media (max-width:1050px){
+    html,body{overflow:auto;height:auto}
+    .layout{grid-template-columns:1fr;height:auto}
+    .left,.right{min-height:auto}
+  }
+  @media print{
+    @page{size:A4 portrait;margin:12mm}
+    html,body{
+      height:auto!important;
+      overflow:visible!important;
+      background:#fff!important;
+    }
+    body{margin:0!important}
+    .topbar,.left,.right-head{display:none!important}
+    .layout{
+      display:block!important;
+      padding:0!important;
+      height:auto!important;
+      min-height:0!important;
+    }
+    .right{
+      display:block!important;
+      height:auto!important;
+      min-height:0!important;
+      border:0!important;
+      box-shadow:none!important;
+      overflow:visible!important;
+    }
+    .view{
+      display:none!important;
+      padding:0!important;
+      overflow:visible!important;
+    }
+    .view.printing{
+      display:block!important;
+    }
+    #detailView.printing .detail-sheet{
+      min-width:0!important;
+      width:100%!important;
+      background:#fff!important;
+    }
+    #detailView.printing .detail-title{
+      font-size:20pt!important;
+      margin:0 0 10mm!important;
+    }
+    #detailView.printing .detail-table,
+    #detailView.printing .session-table{
+      width:100%!important;
+      table-layout:fixed!important;
+      border-collapse:collapse!important;
+      font-size:10.5pt!important;
+    }
+    #detailView.printing .detail-table th,
+    #detailView.printing .detail-table td,
+    #detailView.printing .session-table th,
+    #detailView.printing .session-table td{
+      padding:6pt 7pt!important;
+      line-height:1.45!important;
+      vertical-align:top!important;
+      break-inside:avoid!important;
+      page-break-inside:avoid!important;
+      white-space:pre-wrap!important;
+      word-break:keep-all!important;
+      overflow-wrap:anywhere!important;
+    }
+    #detailView.printing .detail-table th{
+      width:35mm!important;
+    }
+    #detailView.printing .session-table th:nth-child(1){width:14mm!important}
+    #detailView.printing .session-table th:nth-child(2){width:36mm!important}
+    #detailView.printing .session-table th:nth-child(4){width:34mm!important}
+    #detailView.printing thead{
+      display:table-header-group!important;
+    }
+    #detailView.printing tr{
+      break-inside:avoid!important;
+      page-break-inside:avoid!important;
+    }
+    #detailView.printing h3{
+      break-after:avoid!important;
+      page-break-after:avoid!important;
+      margin-top:10mm!important;
+    }
+  }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><div class="brand-badge">▤</div>교육프로그램 논리모형 작성 도구 <span style="font-size:12px;color:#8a948e">v1.6</span></div>
+  <div class="actions">
+    <span class="user-chip" id="userChip">현재 사용자: -</span>
+    <button class="user-change" id="changeUserBtn" type="button">사용자 변경</button>
+    <span class="mode-badge" id="modeBadge">작성 화면</span>
+    <span class="save-state" id="saveState">자동저장 대기</span>
+    <button class="btn" id="sampleBtn">샘플</button>
+    <button class="btn" id="newBtn">새로 작성</button>
+    <button class="btn" id="manualSave">저장</button>
+    <button class="btn primary" id="exportBtn">PDF 내보내기</button>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="panel left">
+    <div class="panel-head">
+      <h2>프로그램 설계 입력</h2>
+      <p>7주차 활동 순서대로 작성하세요. 입력 내용은 오른쪽 결과물에 즉시 반영되며, 1분마다 브라우저에 자동저장됩니다.</p>
+    </div>
+    <div class="accordion-wrap" id="accordionWrap">
+
+      <details class="acc" open data-step="program">
+        <summary><span class="num">1</span>프로그램명을 입력하세요.</summary>
+        <div class="acc-body">
+          <div class="guide">프로그램의 대상과 주요 내용을 알 수 있도록 간결하게 작성하세요.</div>
+          <div class="field">
+            <label>프로그램명</label>
+            <input type="text" data-key="programName" placeholder="예: 대학 신입생 학습전략 향상 프로그램">
+          </div>
+          <div class="step-footer"><button class="next-btn" type="button">다음 →</button></div>
+        </div>
+      </details>
+
+      <details class="acc" data-step="target">
+        <summary><span class="num">2</span>대상과 대상의 특성을 입력하세요.</summary>
+        <div class="acc-body">
+          <div class="field">
+            <label>대상</label>
+            <textarea data-key="target" placeholder="누구를 위한 프로그램인가요?"></textarea>
+          </div>
+          <div class="field">
+            <label>대상의 특성</label>
+            <textarea data-key="targetTraits" placeholder="프로그램 설계에서 고려해야 할 대상의 주요 특성은 무엇인가요?"></textarea>
+          </div>
+          <div class="step-footer"><button class="next-btn" type="button">다음 →</button></div>
+        </div>
+      </details>
+
+      <details class="acc" data-step="needs">
+        <summary><span class="num">3</span>요구와 요구의 근거를 입력하세요.</summary>
+        <div class="acc-body">
+          <div class="field">
+            <label>요구</label>
+            <textarea data-key="needs" placeholder="대상에게 현재 어떤 문제 또는 요구가 있나요?"></textarea>
+          </div>
+          <div class="field">
+            <label>요구의 근거</label>
+            <textarea data-key="needsEvidence" placeholder="그 요구가 있다고 판단한 근거는 무엇인가요?"></textarea>
+            <div class="hint">예: 기존 조사자료, 관찰, 면담, 기관자료, 선행연구 등</div>
+          </div>
+          <div class="field">
+            <label>핵심요구</label>
+            <textarea data-key="coreNeed" placeholder="여러 요구 중 이번 프로그램에서 우선적으로 다룰 요구는 무엇인가요?"></textarea>
+          </div>
+          <div class="step-footer"><button class="next-btn" type="button">다음 →</button></div>
+        </div>
+      </details>
+
+      <details class="acc" data-step="purpose">
+        <summary><span class="num">4</span>목적과 목표를 입력하세요.</summary>
+        <div class="acc-body">
+          <div class="field">
+            <label>목적</label>
+            <textarea data-key="purpose" placeholder="프로그램이 궁극적으로 지향하는 방향은 무엇인가요?"></textarea>
+          </div>
+          <div class="field">
+            <div class="repeat-top"><label style="margin:0">목표</label></div>
+            <div id="goalList" class="repeat-list"></div>
+            <div class="add-row"><button class="mini-btn add" type="button" id="addGoal">+ 목표 추가</button></div>
+          </div>
+          <div class="step-footer"><button class="next-btn" type="button">다음 →</button></div>
+        </div>
+      </details>
+
+      <details class="acc" data-step="activities">
+        <summary><span class="num">5</span>차시별 내용 및 활동을 입력하세요.</summary>
+        <div class="acc-body">
+          <div class="guide">각 차시의 상세 내용은 프로그램 상세표에 표시됩니다. 논리모형에는 <b>차시명/핵심활동</b>이 요약되어 표시됩니다.</div>
+          <div class="repeat-top"><label style="margin:0">차시별 내용 및 활동</label></div>
+          <div id="sessionList" class="repeat-list"></div>
+          <div class="add-row"><button class="mini-btn add" type="button" id="addSession">+ 차시 추가</button></div>
+          <div class="step-footer"><button class="next-btn" type="button">다음 →</button></div>
+        </div>
+      </details>
+
+      <details class="acc" data-step="inputs">
+        <summary><span class="num">6</span>투입(자원)을 입력하세요.</summary>
+        <div class="acc-body">
+          <div class="inline">
+            <div class="field"><label>인력</label><textarea data-key="inputPeople" placeholder="강사, 담당자, 멘토 등"></textarea></div>
+            <div class="field"><label>시간</label><textarea data-key="inputTime" placeholder="운영기간, 차시 수, 회당 시간 등"></textarea></div>
+            <div class="field"><label>예산</label><textarea data-key="inputBudget" placeholder="예산 또는 비용"></textarea></div>
+            <div class="field"><label>공간</label><textarea data-key="inputSpace" placeholder="교실, 강의실, 온라인 등"></textarea></div>
+            <div class="field"><label>자료·매체</label><textarea data-key="inputMedia" placeholder="교재, 활동지, 기자재, 온라인 도구 등"></textarea></div>
+            <div class="field"><label>기타</label><textarea data-key="inputOther" placeholder="그 밖에 필요한 자원"></textarea></div>
+          </div>
+          <div class="step-footer"><button class="next-btn" type="button">다음 →</button></div>
+        </div>
+      </details>
+
+      <details class="acc" data-step="outputs">
+        <summary><span class="num">7</span>산출을 입력하세요.</summary>
+        <div class="acc-body">
+          <div class="guide"><b>활동을 실제로 실시했다면 무엇을 확인할 수 있나요?</b><br>운영 횟수, 참여 인원, 활동 완료율, 제출 과제, 제작 결과물 등</div>
+          <textarea data-key="outputs" placeholder="예: 6회 운영, 20명 참여, 적용과제 80건 제출"></textarea>
+          <div class="hint">산출은 활동에서 도출합니다.</div>
+          <div class="step-footer"><button class="next-btn" type="button">다음 →</button></div>
+        </div>
+      </details>
+
+      <details class="acc" data-step="outcomes">
+        <summary><span class="num">8</span>단기·중기·장기 성과를 입력하세요.</summary>
+        <div class="acc-body">
+          <div class="field"><label>단기성과</label><textarea data-key="shortOutcome" placeholder="프로그램 직후 대상에게 무엇이 달라질 것으로 기대하나요?"></textarea></div>
+          <div class="field"><label>중기성과</label><textarea data-key="midOutcome" placeholder="배운 내용을 실제 상황에서 어떻게 적용하거나 행동으로 옮길 것으로 기대하나요?"></textarea></div>
+          <div class="field"><label>장기성과</label><textarea data-key="longOutcome" placeholder="이러한 변화가 지속되면 궁극적으로 어떤 변화가 나타날 것으로 기대하나요?"></textarea></div>
+          <div class="hint">예: 이해·선택 → 실제 적용·조절 → 지속적 활용·능력 향상 / 성과는 목표에서 도출합니다.</div>
+          <div class="step-footer"><button class="next-btn" type="button">다음 →</button></div>
+        </div>
+      </details>
+
+      <details class="acc" data-step="assumptions">
+        <summary><span class="num">9</span>전제조건과 외부환경을 입력하세요.</summary>
+        <div class="acc-body">
+          <div class="field">
+            <label>전제조건</label>
+            <textarea data-key="assumptions" placeholder="프로그램이 의도한 성과를 내기 위해 반드시 충족되어야 하는 조건은 무엇인가요?"></textarea>
+            <div class="hint">예: 일정 수준 이상의 출석, 기관 협조, 장비 사용 가능, 담당자의 지속적 참여</div>
+          </div>
+          <div class="field">
+            <label>외부환경</label>
+            <textarea data-key="environment" placeholder="프로그램이 직접 통제하기 어렵지만 실행이나 성과에 영향을 줄 수 있는 환경은 무엇인가요?"></textarea>
+            <div class="hint">예: 기관 운영 여건, 협력체계, 정책 변화, 지역사회 환경, 대상자의 생활환경</div>
+          </div>
+          <div class="step-footer"><button class="next-btn" type="button" id="finishBtn">작성 완료 ✓</button></div>
+        </div>
+      </details>
+
+    </div>
+
+      </section>
+
+  <section class="panel right">
+    <div class="right-head">
+      <div>
+        <h2>결과 미리보기</h2>
+        <p>왼쪽에 입력한 내용이 실시간으로 반영됩니다.</p>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-view="logicView">논리모형</button>
+        <button class="tab" data-view="detailView">프로그램 상세</button>
+        <button class="new-task-tab" id="newTaskBtn" type="button">새 작업 시작</button>
+      </div>
+    </div>
+
+    <div class="view active" id="logicView">
+      <div class="logic-canvas" id="logicCanvas">
+        <div style="font-weight:900;font-size:20px;margin-bottom:14px" id="logicProgramTitle">교육프로그램 논리모형</div>
+        <div class="logic-top">
+          <div class="lm-box">
+            <div class="lm-head">목적 · 목표</div>
+            <div class="lm-body" id="logicPurpose"></div>
+          </div>
+          <div class="lm-box">
+            <div class="lm-head">전제조건</div>
+            <div class="lm-body" id="logicAssumptions"></div>
+          </div>
+        </div>
+        <div class="logic-main">
+          <div class="flow-card">
+            <div class="flow-head">대상 · 문제 · 요구</div>
+            <div class="flow-body" id="logicNeeds"></div>
+          </div>
+          <div class="flow-card">
+            <div class="flow-head">투입(자원)</div>
+            <div class="flow-body" id="logicInputs"></div>
+          </div>
+          <div class="flow-card">
+            <div class="flow-head">활동</div>
+            <div class="flow-body" id="logicActivities"></div>
+          </div>
+          <div class="flow-card">
+            <div class="flow-head">산출</div>
+            <div class="flow-body" id="logicOutputs"></div>
+          </div>
+          <div class="flow-card">
+            <div class="flow-head">성과</div>
+            <div class="outcome-grid">
+              <div><div class="outcome-title">단기성과</div><div class="outcome-text" id="logicShort"></div></div>
+              <div><div class="outcome-title">중기성과</div><div class="outcome-text" id="logicMid"></div></div>
+              <div><div class="outcome-title">장기성과</div><div class="outcome-text" id="logicLong"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="lm-box external">
+          <div class="lm-head">외부환경</div>
+          <div class="lm-body" id="logicEnvironment"></div>
+        </div>
+        <div class="logic-note">※ 산출은 활동에서 도출하고, 성과는 목표에서 도출합니다.</div>
+      </div>
+    </div>
+
+    <div class="view" id="detailView">
+      <div class="detail-sheet" id="detailSheet">
+        <div class="detail-title" id="detailProgramTitle">프로그램 상세 설계</div>
+        <table class="detail-table">
+          <tbody id="detailBody"></tbody>
+        </table>
+        <h3 style="margin:20px 0 8px">차시별 프로그램 내용</h3>
+        <table class="session-table">
+          <thead>
+            <tr><th style="width:75px">차시</th><th style="width:180px">차시명/핵심활동</th><th>상세 내용 및 활동</th><th style="width:170px">교수학습방법</th></tr>
+          </thead>
+          <tbody id="sessionTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <h2>사용자 확인</h2>
+    <p>이름을 입력하세요. 등록된 사용자만 사용할 수 있습니다.</p>
+    <input type="text" id="loginName" placeholder="이름 입력">
+    <div class="login-error" id="loginError"></div>
+    <div class="login-actions">
+      <button class="btn primary" id="loginBtn" type="button">확인</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const STORAGE_PREFIX = "logicModelBuilderDraftV1:";
+  const LAST_USER_KEY = "logicModelBuilderLastUserV1";
+  const ALLOWED_USERS = ["조민휘","김성민","윤수연"];
+  const AUTOSAVE_MS = 60000;
+  const defaultState = {
+    programName:"", target:"", targetTraits:"", needs:"", needsEvidence:"", coreNeed:"",
+    purpose:"", goals:[{text:"", timing:"", domain:""}],
+    sessions:[{title:"", detail:"", methods:[]}],
+    inputPeople:"", inputTime:"", inputBudget:"", inputSpace:"", inputMedia:"", inputOther:"",
+    outputs:"", shortOutcome:"", midOutcome:"", longOutcome:"", assumptions:"", environment:""
+  };
+
+
+  const sampleState = {
+    programName:"대학 신입생 자기주도 학습전략 향상 프로그램",
+    target:"A대학교 1학년 신입생 중 대학 학습방법에 적응하는 데 어려움을 경험하는 학생",
+    targetTraits:"고등학교와 달라진 대학 학습환경에 적응해야 함\n과제, 시험, 팀프로젝트 등 다양한 학습과제를 스스로 관리해야 함\n자신의 학습방법을 점검하고 상황에 맞는 전략을 선택하는 경험이 부족할 수 있음\n전공과 학습경험이 다양하여 동일한 학습방법을 일괄적으로 적용하기 어려움",
+    needs:"대학 학습과제의 특성에 따라 적절한 학습전략을 선택하고 실제 학습상황에 적용하는 능력이 부족함",
+    needsEvidence:"신입생 학습지원 프로그램 참여자 상담 및 프로그램 운영 과정에서 학습방법에 대한 어려움이 반복적으로 확인됨\n학생들이 시험공부, 과제 수행, 노트정리 등에 기존의 한 가지 학습방법을 반복적으로 사용하는 경향이 관찰됨\n기존 학습지원 프로그램 만족도 및 요구조사에서 효과적인 학습방법에 대한 지원 요구가 지속적으로 나타남",
+    coreNeed:"자신의 학습과제와 학습상황에 적합한 학습전략을 선택하고 적용할 수 있는 역량 향상",
+    purpose:"대학 신입생이 자신의 학습과정을 스스로 점검하고, 학습상황에 적합한 전략을 선택·적용·조절할 수 있도록 지원한다.",
+    goals:[
+      {text:"주요 학습전략의 특징과 활용 상황을 설명할 수 있다.", timing:"단기", domain:"인지적"},
+      {text:"과제와 학습상황의 특성을 고려하여 적절한 학습전략을 선택할 수 있다.", timing:"단기", domain:"인지적"},
+      {text:"선택한 학습전략을 실제 학습과제에 적용하고 그 결과를 점검하여 조절할 수 있다.", timing:"중기", domain:"심동적"},
+      {text:"자신에게 효과적인 학습전략을 지속적으로 활용하는 태도를 형성한다.", timing:"장기", domain:"정의적"}
+    ],
+    sessions:[
+      {title:"나의 학습방법 점검하기", detail:"학생들은 현재 자신이 사용하는 학습방법을 점검하고, 대학에서 경험하는 주요 학습과제를 유형별로 분류한다. 자신의 학습방법이 모든 과제에 동일하게 적용되고 있는지 살펴보고, 학습상황에 따라 전략을 달리 선택할 필요성을 확인한다.", methods:["강의","개별실습","토론"]},
+      {title:"학습전략 비교하고 선택하기", detail:"노트정리, 인출연습, 분산학습, 자기설명 등 주요 학습전략의 특징과 장단점을 사례를 통해 비교한다. 여러 학습과제 사례를 보고 어떤 전략이 적절한지 선택한 뒤 그 이유를 설명한다.", methods:["강의","사례분석","토론"]},
+      {title:"실제 과제에 전략 적용하기", detail:"자신이 현재 수행 중인 실제 과제나 시험준비 상황을 하나 선택하고, 적절한 학습전략을 적용하는 계획을 세운다. 계획에 따라 전략을 실제로 적용하고 간단한 적용 기록을 작성한다.", methods:["개별실습","프로젝트"]},
+      {title:"적용 결과 점검하고 조절하기", detail:"실제 학습상황에 적용한 결과를 서로 공유하고, 효과적이었던 점과 어려웠던 점을 분석한다. 자신의 학습전략을 유지·수정·대체할지 판단하고 이후 학습에서 활용할 개인별 학습전략 계획을 작성한다.", methods:["토론","사례분석","개별실습"]}
+    ],
+    inputPeople:"교수학습지원센터 담당자 1명\n학습전략 프로그램 강사 1명",
+    inputTime:"총 4차시\n차시당 90분\n4주간 주 1회 운영",
+    inputBudget:"강사비\n활동자료 제작비\n소규모 프로그램 운영비",
+    inputSpace:"20명 내외가 활동할 수 있는 강의실\n소그룹 토론이 가능한 이동식 좌석 배치",
+    inputMedia:"학습전략 자기점검표\n학습과제 사례자료\n학습전략 적용계획서\n적용 결과 점검표\n빔프로젝터 및 온라인 학습자료",
+    inputOther:"학생의 실제 과제 또는 학습자료\n프로그램 참여 및 과제수행을 위한 온라인 공유공간",
+    outputs:"학습전략 프로그램 4회 운영\n대학 신입생 20명 참여\n학습방법 자기점검표 20부 작성\n학습전략 적용계획서 20부 작성\n실제 학습전략 적용 기록 20건 이상 수집\n개인별 학습전략 개선계획 20부 작성",
+    shortOutcome:"주요 학습전략의 특징과 적절한 활용 상황에 대한 이해가 향상됨\n학습과제의 특성에 따라 적절한 학습전략을 선택하는 능력이 향상됨",
+    midOutcome:"실제 과제와 시험준비 상황에서 학습전략을 적용하는 행동이 증가함\n학습전략 적용 결과를 점검하고 상황에 맞게 수정·조절하는 능력이 향상됨",
+    longOutcome:"자신에게 효과적인 학습전략을 지속적으로 활용하는 습관이 형성됨\n자신의 학습과정을 스스로 계획·점검·조절하는 자기주도적 학습역량이 향상됨",
+    assumptions:"학생이 프로그램 4차시 중 최소 3차시 이상 참여함\n학생이 자신의 실제 학습과제를 프로그램 활동에 활용할 수 있음\n차시 사이에 학습전략을 실제로 적용해볼 시간이 확보됨\n학생이 자신의 학습과정을 솔직하게 점검하고 공유할 수 있는 분위기가 형성됨\n교수학습지원센터에서 프로그램 운영을 위한 인력과 공간을 안정적으로 제공함",
+    environment:"중간·기말고사 및 과제 마감 등 대학 학사일정\n전공별 수업 및 과제 특성의 차이\n학생 개인의 학업 부담과 아르바이트 등 생활여건\n교수자의 과제 및 수업 운영 방식\n대학 내 다른 학습지원 프로그램 및 상담·학생지원 서비스와의 연계 정도"
+  };
+
+  let currentUser = null;
+  let state = structuredClone(defaultState);
+  let currentMode = "draft"; // draft | sample
+  let activeView = "logicView";
+  let printView = "logicView";
+
+  function storageKeyFor(user){
+    return `${STORAGE_PREFIX}${user}`;
+  }
+
+  function loadState(user=currentUser){
+    if(!user) return structuredClone(defaultState);
+    try{
+      const raw = localStorage.getItem(storageKeyFor(user));
+      if(!raw) return structuredClone(defaultState);
+      return Object.assign(structuredClone(defaultState), JSON.parse(raw));
+    }catch(e){
+      return structuredClone(defaultState);
+    }
+  }
+
+  function saveState(showToast=false){
+    if(currentMode==="sample"){
+      if(showToast) toast("샘플 화면은 저장되지 않습니다. '새로 작성'으로 돌아가면 기존 작성본이 유지됩니다.");
+      return;
+    }
+    if(!currentUser) return;
+    localStorage.setItem(storageKeyFor(currentUser), JSON.stringify(state));
+    localStorage.setItem(LAST_USER_KEY, currentUser);
+    const now = new Date();
+    document.getElementById("saveState").textContent = `작성본 저장됨 (${now.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"})})`;
+    if(showToast) toast(`${currentUser}님의 작성 내용이 저장되었습니다.`);
+  }
+
+  function toast(msg){
+    const el=document.getElementById("toast");
+    el.textContent=msg; el.classList.add("show");
+    clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("show"),1600);
+  }
+
+  function esc(text=""){
+    return String(text).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  }
+
+  function valOrEmpty(s){ return s && s.trim() ? s.trim() : ""; }
+  function bullets(parts){
+    return parts.filter(Boolean).map(x=>"• "+x).join("\n");
+  }
+
+
+  function syncStaticFields(){
+    document.querySelectorAll("[data-key]").forEach(el=>{
+      const key=el.dataset.key;
+      el.value=state[key] ?? "";
+    });
+  }
+
+  function goNextFrom(detailsEl){
+    const all=[...document.querySelectorAll("details.acc")];
+    const i=all.indexOf(detailsEl);
+    if(i<0) return;
+    detailsEl.open=false;
+    if(i < all.length-1){
+      const next=all[i+1];
+      next.open=true;
+      setTimeout(()=>next.scrollIntoView({behavior:"smooth",block:"start"}),60);
+    }else{
+      toast("작성 단계가 완료되었습니다.");
+    }
+  }
+
+  function bindStaticFields(){
+    document.querySelectorAll("[data-key]").forEach(el=>{
+      const key=el.dataset.key;
+      el.value=state[key] ?? "";
+      el.addEventListener("input", ()=>{
+        state[key]=el.value;
+        renderAll();
+      });
+    });
+  }
+
+  function renderGoals(){
+    const wrap=document.getElementById("goalList");
+    wrap.innerHTML="";
+    state.goals.forEach((g,i)=>{
+      const card=document.createElement("div");
+      card.className="repeat-card";
+      card.innerHTML=`
+        <div class="repeat-top">
+          <div class="repeat-title">목표 ${i+1}</div>
+          ${state.goals.length>1?`<button class="mini-btn remove" type="button" data-remove-goal="${i}">삭제</button>`:""}
+        </div>
+        <div class="field"><textarea data-goal-text="${i}" placeholder="대상에게 나타나야 하는 구체적인 변화를 작성하세요.">${esc(g.text)}</textarea></div>
+        <div class="inline">
+          <div><label>변화 시점</label>
+            <select data-goal-timing="${i}">
+              <option value="">선택 안 함</option>
+              ${["단기","중기","장기"].map(x=>`<option ${g.timing===x?"selected":""}>${x}</option>`).join("")}
+            </select>
+          </div>
+          <div><label>목표 특성</label>
+            <select data-goal-domain="${i}">
+              <option value="">선택 안 함</option>
+              ${["인지적","정의적","심동적"].map(x=>`<option ${g.domain===x?"selected":""}>${x}</option>`).join("")}
+            </select>
+          </div>
+        </div>`;
+      wrap.appendChild(card);
+    });
+    wrap.querySelectorAll("[data-goal-text]").forEach(el=>el.addEventListener("input",e=>{state.goals[+e.target.dataset.goalText].text=e.target.value;renderAll()}));
+    wrap.querySelectorAll("[data-goal-timing]").forEach(el=>el.addEventListener("change",e=>{state.goals[+e.target.dataset.goalTiming].timing=e.target.value;renderAll()}));
+    wrap.querySelectorAll("[data-goal-domain]").forEach(el=>el.addEventListener("change",e=>{state.goals[+e.target.dataset.goalDomain].domain=e.target.value;renderAll()}));
+    wrap.querySelectorAll("[data-remove-goal]").forEach(el=>el.addEventListener("click",e=>{state.goals.splice(+e.target.dataset.removeGoal,1);renderGoals();renderAll()}));
+  }
+
+  const methodOptions=["강의","토론","사례분석","개별실습","협동활동","역할놀이","프로젝트","시범","체험활동","기타"];
+  function renderSessions(){
+    const wrap=document.getElementById("sessionList");
+    wrap.innerHTML="";
+    state.sessions.forEach((s,i)=>{
+      const card=document.createElement("div");
+      card.className="repeat-card";
+      card.innerHTML=`
+        <div class="repeat-top">
+          <div class="repeat-title">${i+1}차시</div>
+          ${state.sessions.length>1?`<button class="mini-btn remove" type="button" data-remove-session="${i}">삭제</button>`:""}
+        </div>
+        <div class="field">
+          <label>차시명 / 핵심활동</label>
+          <input type="text" data-session-title="${i}" value="${esc(s.title)}" placeholder="논리모형 활동 칸에 표시될 짧은 제목">
+        </div>
+        <div class="field">
+          <label>상세 내용 및 활동</label>
+          <textarea data-session-detail="${i}" placeholder="학생이 무엇을 배우고, 경험하고, 구체적으로 무엇을 하는지 상세히 작성하세요.">${esc(s.detail)}</textarea>
+        </div>
+        <div class="field">
+          <label>교수학습방법</label>
+          <div class="check-grid">
+            ${methodOptions.map(m=>`
+              <label class="check-item"><input type="checkbox" data-session-method="${i}" value="${m}" ${(s.methods||[]).includes(m)?"checked":""}> ${m}</label>
+            `).join("")}
+          </div>
+        </div>`;
+      wrap.appendChild(card);
+    });
+    wrap.querySelectorAll("[data-session-title]").forEach(el=>el.addEventListener("input",e=>{state.sessions[+e.target.dataset.sessionTitle].title=e.target.value;renderAll()}));
+    wrap.querySelectorAll("[data-session-detail]").forEach(el=>el.addEventListener("input",e=>{state.sessions[+e.target.dataset.sessionDetail].detail=e.target.value;renderAll()}));
+    wrap.querySelectorAll("[data-session-method]").forEach(el=>el.addEventListener("change",e=>{
+      const i=+e.target.dataset.sessionMethod;
+      const checked=[...wrap.querySelectorAll(`[data-session-method="${i}"]:checked`)].map(x=>x.value);
+      state.sessions[i].methods=checked; renderAll();
+    }));
+    wrap.querySelectorAll("[data-remove-session]").forEach(el=>el.addEventListener("click",e=>{state.sessions.splice(+e.target.dataset.removeSession,1);renderSessions();renderAll()}));
+  }
+
+  function renderLogic(){
+    document.getElementById("logicProgramTitle").textContent = state.programName ? `${state.programName} · 논리모형` : "교육프로그램 논리모형";
+
+    const goalLines = state.goals.filter(g=>valOrEmpty(g.text)).map((g,i)=>{
+      const meta=[g.timing,g.domain].filter(Boolean).join(" · ");
+      return `${i+1}. ${g.text}${meta?` (${meta})`:""}`;
+    });
+    document.getElementById("logicPurpose").textContent = [
+      state.purpose ? `목적: ${state.purpose}` : "",
+      goalLines.length ? `목표:\n${goalLines.join("\n")}` : ""
+    ].filter(Boolean).join("\n\n");
+
+    document.getElementById("logicAssumptions").textContent = state.assumptions;
+    document.getElementById("logicNeeds").textContent = bullets([
+      state.target ? `대상: ${state.target}`:"",
+      state.targetTraits ? `대상의 특성: ${state.targetTraits}`:"",
+      state.needs ? `요구: ${state.needs}`:"",
+      state.needsEvidence ? `근거: ${state.needsEvidence}`:"",
+      state.coreNeed ? `핵심요구: ${state.coreNeed}`:""
+    ]);
+
+    document.getElementById("logicInputs").textContent = bullets([
+      state.inputPeople ? `인력: ${state.inputPeople}`:"",
+      state.inputTime ? `시간: ${state.inputTime}`:"",
+      state.inputBudget ? `예산: ${state.inputBudget}`:"",
+      state.inputSpace ? `공간: ${state.inputSpace}`:"",
+      state.inputMedia ? `자료·매체: ${state.inputMedia}`:"",
+      state.inputOther ? `기타: ${state.inputOther}`:""
+    ]);
+
+    const activityLines = state.sessions
+      .filter(s=>valOrEmpty(s.title)||valOrEmpty(s.detail))
+      .map((s,i)=>`${i+1}차시. ${s.title || s.detail.split(/\n|[.!?]/)[0].slice(0,36)}`);
+    document.getElementById("logicActivities").textContent = activityLines.join("\n");
+
+    document.getElementById("logicOutputs").textContent = state.outputs;
+    document.getElementById("logicShort").textContent = state.shortOutcome;
+    document.getElementById("logicMid").textContent = state.midOutcome;
+    document.getElementById("logicLong").textContent = state.longOutcome;
+    document.getElementById("logicEnvironment").textContent = state.environment;
+  }
+
+  function renderDetail(){
+    document.getElementById("detailProgramTitle").textContent = state.programName || "프로그램 상세 설계";
+    const rows=[
+      ["대상",state.target],
+      ["대상의 특성",state.targetTraits],
+      ["요구",state.needs],
+      ["요구의 근거",state.needsEvidence],
+      ["핵심요구",state.coreNeed],
+      ["목적",state.purpose],
+      ["목표", state.goals.filter(g=>g.text).map((g,i)=>`${i+1}. ${g.text}${[g.timing,g.domain].filter(Boolean).length?` (${[g.timing,g.domain].filter(Boolean).join(" · ")})`:""}`).join("\n")],
+      ["투입(자원)", bullets([
+        state.inputPeople?`인력: ${state.inputPeople}`:"",
+        state.inputTime?`시간: ${state.inputTime}`:"",
+        state.inputBudget?`예산: ${state.inputBudget}`:"",
+        state.inputSpace?`공간: ${state.inputSpace}`:"",
+        state.inputMedia?`자료·매체: ${state.inputMedia}`:"",
+        state.inputOther?`기타: ${state.inputOther}`:""
+      ])],
+      ["산출",state.outputs],
+      ["단기성과",state.shortOutcome],
+      ["중기성과",state.midOutcome],
+      ["장기성과",state.longOutcome],
+      ["전제조건",state.assumptions],
+      ["외부환경",state.environment]
+    ];
+    document.getElementById("detailBody").innerHTML=rows.map(([h,v])=>`<tr><th>${h}</th><td>${v?esc(v).replace(/\n/g,"<br>"):'<span class="empty">미입력</span>'}</td></tr>`).join("");
+
+    const tb=document.getElementById("sessionTableBody");
+    tb.innerHTML=state.sessions.map((s,i)=>`
+      <tr>
+        <td>${i+1}차시</td>
+        <td>${s.title?esc(s.title):'<span class="empty">미입력</span>'}</td>
+        <td>${s.detail?esc(s.detail).replace(/\n/g,"<br>"):'<span class="empty">미입력</span>'}</td>
+        <td>${(s.methods||[]).length?esc(s.methods.join(", ")):'<span class="empty">미입력</span>'}</td>
+      </tr>`).join("");
+  }
+
+  function renderAll(){
+    renderLogic(); renderDetail();
+  }
+
+  // add buttons
+  document.getElementById("addGoal").addEventListener("click",()=>{state.goals.push({text:"",timing:"",domain:""});renderGoals();renderAll();});
+  document.getElementById("addSession").addEventListener("click",()=>{state.sessions.push({title:"",detail:"",methods:[]});renderSessions();renderAll();});
+
+  // Tabs
+  document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+    document.getElementById(btn.dataset.view).classList.add("active");
+    activeView=btn.dataset.view;
+  }));
+
+
+  // 다음 단계
+  document.querySelectorAll(".next-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const details=btn.closest("details.acc");
+      goNextFrom(details);
+    });
+  });
+
+
+  function openFirstStep(){
+    const all=[...document.querySelectorAll("details.acc")];
+    all.forEach((d,i)=>d.open=(i===0));
+    const wrap=document.getElementById("accordionWrap");
+    wrap.scrollTo({top:0,behavior:"smooth"});
+    setTimeout(()=>{
+      const firstInput=document.querySelector('details.acc[open] input, details.acc[open] textarea');
+      if(firstInput) firstInput.focus();
+    },180);
+  }
+
+  function updateModeUI(){
+    document.getElementById("userChip").textContent = currentUser ? `현재 사용자: ${currentUser}` : "현재 사용자: -";
+    const badge=document.getElementById("modeBadge");
+    if(currentMode==="sample"){
+      badge.textContent="샘플 화면";
+      badge.classList.add("sample");
+      document.getElementById("saveState").textContent="샘플 미리보기 · 작성본은 별도 보존";
+    }else{
+      badge.textContent="작성 화면";
+      badge.classList.remove("sample");
+      const hasSaved=currentUser && !!localStorage.getItem(storageKeyFor(currentUser));
+      document.getElementById("saveState").textContent=hasSaved ? "저장된 작성본 불러옴" : "자동저장 대기";
+    }
+  }
+
+  function refreshScreenFromState(){
+    syncStaticFields();
+    renderGoals();
+    renderSessions();
+    renderAll();
+    updateModeUI();
+  }
+
+  function switchToUser(user){
+    currentUser=user;
+    currentMode="draft";
+    state=loadState(user);
+    localStorage.setItem(LAST_USER_KEY,user);
+    refreshScreenFromState();
+    openFirstStep();
+    document.getElementById("loginOverlay").style.display="none";
+  }
+
+  function showLogin(prefill=""){
+    const overlay=document.getElementById("loginOverlay");
+    const input=document.getElementById("loginName");
+    const err=document.getElementById("loginError");
+    overlay.style.display="flex";
+    input.value=prefill;
+    err.textContent="";
+    setTimeout(()=>input.focus(),50);
+  }
+
+  function handleLogin(){
+    const name=document.getElementById("loginName").value.trim();
+    const err=document.getElementById("loginError");
+    if(!ALLOWED_USERS.includes(name)){
+      err.textContent="등록되지 않은 사용자입니다. 조민휘 / 김성민 / 윤수연 중 한 명의 이름을 입력하세요.";
+      return;
+    }
+    switchToUser(name);
+  }
+
+  document.getElementById("loginBtn").addEventListener("click",handleLogin);
+  document.getElementById("loginName").addEventListener("keydown",e=>{
+    if(e.key==="Enter") handleLogin();
+  });
+
+  document.getElementById("changeUserBtn").addEventListener("click",()=>{
+    if(currentMode==="draft") saveState(false);
+    showLogin("");
+  });
+
+  function loadDraftIntoScreen(){
+    currentMode="draft";
+    state=loadState(currentUser);
+    refreshScreenFromState();
+    openFirstStep();
+  }
+
+  // 새로 작성 = 샘플에서 자신의 저장본으로 돌아가기
+  document.getElementById("newBtn").addEventListener("click",()=>{
+    loadDraftIntoScreen();
+    toast(localStorage.getItem(storageKeyFor(currentUser)) ? `${currentUser}님의 저장한 작성본으로 돌아왔습니다.` : "새 작성 화면으로 전환되었습니다.");
+  });
+
+  // 샘플 화면: 공통 샘플을 임시 표시
+  document.getElementById("sampleBtn").addEventListener("click",()=>{
+    if(currentMode==="draft") saveState(false);
+    if(!confirm("샘플 화면으로 전환합니다. 현재 작성한 내용은 별도로 저장되어 유지됩니다. 계속할까요?")) return;
+    currentMode="sample";
+    state=structuredClone(sampleState);
+    refreshScreenFromState();
+    openFirstStep();
+    toast("공통 샘플 화면입니다. '새로 작성'을 누르면 본인의 작성본으로 돌아갑니다.");
+  });
+
+  // 새 작업 시작 = 현재 사용자의 작성본 완전 초기화
+  document.getElementById("newTaskBtn").addEventListener("click",()=>{
+    if(!currentUser) return;
+    const ok=confirm("새 작업을 시작하면 현재 작성내용이 삭제됩니다. 필요한 경우 먼저 PDF로 저장해주세요. 계속할까요?");
+    if(!ok) return;
+    localStorage.removeItem(storageKeyFor(currentUser));
+    currentMode="draft";
+    state=structuredClone(defaultState);
+    refreshScreenFromState();
+    openFirstStep();
+    toast("새 작업을 시작합니다.");
+  });
+
+  // manual save
+  document.getElementById("manualSave").addEventListener("click",()=>saveState(true));
+  setInterval(()=>{ if(currentUser && currentMode==="draft") saveState(false); }, AUTOSAVE_MS);
+
+  // PDF 내보내기
+  // - 논리모형: 현재 디자인을 유지한 채 PDF 파일로 직접 생성
+  // - 프로그램 상세: 브라우저 인쇄 화면을 열어 사용자가 'PDF로 저장'
+  document.getElementById("exportBtn").addEventListener("click", async ()=>{
+    saveState(false);
+
+    if(activeView==="detailView"){
+      // 프로그램 상세는 인쇄용 레이아웃으로 전환 후 브라우저 인쇄창 사용
+      document.querySelectorAll(".view").forEach(x=>x.classList.remove("printing"));
+      const detail=document.getElementById("detailView");
+      detail.classList.add("printing");
+      const safeTitle=(state.programName||"교육프로그램").replace(/[\\/:*?"<>|]/g,"_");
+      const safeUser=(currentUser||"사용자").replace(/[\\/:*?"<>|]/g,"_");
+      window._oldDocumentTitle=document.title;
+      document.title=`${safeUser}_${safeTitle}_프로그램상세`;
+      setTimeout(()=>window.print(),80);
+      return;
+    }
+
+    // 논리모형은 기존 직접 PDF 생성 방식 유지
+    const btn=document.getElementById("exportBtn");
+    btn.classList.add("pdf-busy");
+    const oldText=btn.textContent;
+    btn.textContent="PDF 생성 중...";
+    try{
+      const { jsPDF }=window.jspdf;
+      const safe=(state.programName||"교육프로그램").replace(/[\\/:*?"<>|]/g,"_");
+      const userSafe=(currentUser||"사용자").replace(/[\\/:*?"<>|]/g,"_");
+      const target=document.getElementById("logicCanvas");
+      const canvas=await html2canvas(target,{
+        scale:2,
+        backgroundColor:"#ffffff",
+        useCORS:true,
+        logging:false,
+        scrollX:0,
+        scrollY:0
+      });
+      const imgData=canvas.toDataURL("image/png",1.0);
+      const pdf=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+      const pageW=pdf.internal.pageSize.getWidth();
+      const pageH=pdf.internal.pageSize.getHeight();
+      const margin=8;
+      const ratio=Math.min((pageW-margin*2)/canvas.width,(pageH-margin*2)/canvas.height);
+      const drawW=canvas.width*ratio;
+      const drawH=canvas.height*ratio;
+      pdf.addImage(imgData,"PNG",(pageW-drawW)/2,(pageH-drawH)/2,drawW,drawH,"FAST");
+      pdf.save(`${userSafe}_${safe}_논리모형.pdf`);
+      toast("논리모형 PDF가 저장되었습니다.");
+    }catch(err){
+      console.error(err);
+      alert("PDF 생성 중 오류가 발생했습니다. 인터넷 연결 상태를 확인한 뒤 다시 시도해주세요.");
+    }finally{
+      btn.classList.remove("pdf-busy");
+      btn.textContent=oldText;
+    }
+  });
+
+  window.addEventListener("afterprint",()=>{
+    document.querySelectorAll(".view").forEach(x=>x.classList.remove("printing"));
+    if(window._oldDocumentTitle){
+      document.title=window._oldDocumentTitle;
+      window._oldDocumentTitle=null;
+    }
+  });
+
+  // initialize
+  bindStaticFields();
+  syncStaticFields();
+  renderGoals();
+  renderSessions();
+  renderAll();
+  updateModeUI();
+
+  const lastUser=localStorage.getItem(LAST_USER_KEY) || "";
+  showLogin(lastUser);
+
+})();
+</script>
+</body>
+</html>
